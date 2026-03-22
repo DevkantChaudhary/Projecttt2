@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin User Management</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>User Management</h1>
+        <nav>
+            <a href="../index.html">Home</a>
+        </nav>
+    </header>
+    <main>
+        <h2>All Users</h2>
+        <table id="usersTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Add New User</h3>
+        <form id="addUserForm">
+            <label for="userName">Name:</label>
+            <input type="text" id="userName" required>
+
+            <label for="userEmail">Email:</label>
+            <input type="email" id="userEmail" required>
+
+            <label for="userRole">Role:</label>
+            <select id="userRole" required>
+                <option value="customer">Customer</option>
+                <option value="admin">Admin</option>
+            </select>
+
+            <button type="submit">Add User</button>
+        </form>
+
+        <div id="editUserForm" class="hidden">
+            <h3>Edit User</h3>
+            <form id="editForm">
+                <input type="hidden" id="editUserId">
+                <label for="editUserName">Name:</label>
+                <input type="text" id="editUserName" required>
+
+                <label for="editUserEmail">Email:</label>
+                <input type="email" id="editUserEmail" required>
+
+                <label for="editUserRole">Role:</label>
+                <select id="editUserRole" required>
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                </select>
+
+                <button type="submit">Update User</button>
+                <button type="button" id="cancelEditUser">Cancel</button>
+            </form>
+        </div>
+    </main>
+    <script src="../js/app.js"></script>
+    <script>
+        function renderUsers() {
+            const users = getFromStorage('users');
+            const tbody = document.querySelector('#usersTable tbody');
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role}</td>
+                    <td>
+                        <button onclick="editUser('${user.id}')">Edit</button>
+                        <button onclick="deleteUser('${user.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function editUser(id) {
+            const users = getFromStorage('users');
+            const user = users.find(u => u.id === id);
+            if (user) {
+                document.getElementById('editUserId').value = user.id;
+                document.getElementById('editUserName').value = user.name;
+                document.getElementById('editUserEmail').value = user.email;
+                document.getElementById('editUserRole').value = user.role;
+                document.getElementById('editUserForm').classList.remove('hidden');
+            }
+        }
+
+        function deleteUser(id) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                let users = getFromStorage('users');
+                users = users.filter(u => u.id !== id);
+                saveToStorage('users', users);
+                renderUsers();
+            }
+        }
+
+        document.getElementById('addUserForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            const role = document.getElementById('userRole').value;
+
+            const users = getFromStorage('users');
+            const newUser = {
+                id: generateId(),
+                name,
+                email,
+                role
+            };
+            users.push(newUser);
+            saveToStorage('users', users);
+            renderUsers();
+            this.reset();
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const id = document.getElementById('editUserId').value;
+            const name = document.getElementById('editUserName').value;
+            const email = document.getElementById('editUserEmail').value;
+            const role = document.getElementById('editUserRole').value;
+
+            let users = getFromStorage('users');
+            const index = users.findIndex(u => u.id === id);
+            if (index !== -1) {
+                users[index] = { id, name, email, role };
+                saveToStorage('users', users);
+                renderUsers();
+                document.getElementById('editUserForm').classList.add('hidden');
+            }
+        });
+
+        document.getElementById('cancelEditUser').addEventListener('click', function() {
+            document.getElementById('editUserForm').classList.add('hidden');
+        });
+
+        renderUsers();
+    </script>
+</body>
+</html>

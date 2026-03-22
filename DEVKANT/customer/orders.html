@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Orders</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Make an Order</h1>
+        <nav>
+            <a href="../index.html">Home</a>
+        </nav>
+    </header>
+    <main>
+        <h2>Available Products</h2>
+        <table id="productsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Your Cart</h3>
+        <ul id="cartList"></ul>
+        <button id="placeOrderBtn">Place Order</button>
+    </main>
+    <script src="../js/app.js"></script>
+    <script>
+        let cart = getFromStorage('cart') || [];
+
+        function renderProducts() {
+            const products = getFromStorage('products');
+            const tbody = document.querySelector('#productsTable tbody');
+            tbody.innerHTML = '';
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.price}</td>
+                    <td>${product.description}</td>
+                    <td><input type="number" min="1" value="1" id="qty-${product.id}"></td>
+                    <td><button onclick="addToCart('${product.id}')">Add to Cart</button></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderCart() {
+            const cartList = document.getElementById('cartList');
+            cartList.innerHTML = '';
+            cart.forEach(item => {
+                const li = document.createElement('li');
+                li.textContent = `${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`;
+                cartList.appendChild(li);
+            });
+        }
+
+        function addToCart(productId) {
+            const products = getFromStorage('products');
+            const product = products.find(p => p.id === productId);
+            const qty = parseInt(document.getElementById(`qty-${productId}`).value);
+            if (product && qty > 0) {
+                const existing = cart.find(item => item.id === productId);
+                if (existing) {
+                    existing.quantity += qty;
+                } else {
+                    cart.push({ id: product.id, name: product.name, price: product.price, quantity: qty });
+                }
+                saveToStorage('cart', cart);
+                renderCart();
+            }
+        }
+
+        document.getElementById('placeOrderBtn').addEventListener('click', function() {
+            if (cart.length === 0) {
+                alert('Cart is empty!');
+                return;
+            }
+            const users = getFromStorage('users');
+            const customer = users.find(u => u.role === 'customer');
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            const orders = getFromStorage('orders');
+            const newOrder = {
+                id: generateId(),
+                userId: customer.id,
+                products: cart.map(item => ({ id: item.id, quantity: item.quantity })),
+                status: 'pending',
+                total: total.toFixed(2),
+                paymentStatus: 'Pending'
+            };
+            orders.push(newOrder);
+            saveToStorage('orders', orders);
+            cart = [];
+            saveToStorage('cart', cart);
+            renderCart();
+            alert('Order placed successfully!');
+        });
+
+        renderProducts();
+        renderCart();
+    </script>
+</body>
+</html>
